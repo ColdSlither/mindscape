@@ -95,8 +95,8 @@ interior where separate minds coexist and can see each other.
 # from the repository (a custom source: installs the branch tip, and warns it is unvetted)
 hermes plugins install ColdSlither/mindscape
 
-# or pin the exact commit this README was written against
-hermes plugins install ColdSlither/mindscape --ref 9fc406fe5ba325ed379faceb418fe00f0c05b020
+# or pin an exact reviewed commit (the current one is the tip of main)
+hermes plugins install ColdSlither/mindscape --ref <40-char-commit-sha>
 
 hermes plugins enable mindscape
 ```
