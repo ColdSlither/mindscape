@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 import subprocess
 import sys
@@ -145,17 +144,16 @@ def _overlay() -> dict:
 
 
 def _peer_key(name: str) -> str:
-    """The peer's bearer key: profile secret store first, raw env as fallback."""
-    env_name = f"HERMES_PEER_{name.upper().replace('-', '_')}_KEY"
-    try:
-        from agent.secret_scope import get_secret
+    """The peer's bearer key, read through the documented scoped-secret route.
 
-        value = (get_secret(env_name, "") or "").strip()
-        if value:
-            return value
-    except Exception:
-        pass
-    return (os.environ.get(env_name) or "").strip()
+    ``agent.secret_scope.get_secret`` honours the active profile. A bare ``os.environ`` read
+    can pick up another profile's key under multiplexing, so there is no env fallback here:
+    the profile store is the single source, and a key it does not hold reads as absent.
+    """
+    from agent.secret_scope import get_secret
+
+    env_name = f"HERMES_PEER_{name.upper().replace('-', '_')}_KEY"
+    return (get_secret(env_name, "") or "").strip()
 
 
 def _node_view(name: str, entry: dict) -> dict:

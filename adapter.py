@@ -95,20 +95,17 @@ def check_requirements() -> bool:
 
 
 def _scoped(name: str, default: str = "") -> str:
-    """Read a *scoped* secret, never ``os.environ`` directly.
+    """Read a *scoped* secret through the documented platform helper.
 
-    Under multiplexing ``os.environ`` belongs to the launch profile, so a raw read lets a
-    secondary profile inherit the launch profile's token and port. The reference adapter
-    reads these through the scoped helper for exactly that reason.
+    Under multiplexing ``os.environ`` belongs to the launch profile, so a raw read would let a
+    secondary profile inherit the launch profile's token and port. ``get_scoped_secret``
+    (``gateway.platforms._shared``, documented for platform plugins) resolves the active
+    profile's store instead. There is deliberately no ``os.environ`` fallback: a name that is
+    not in the active profile is reported as missing rather than silently inherited.
     """
-    try:
-        from gateway.platforms._shared import get_scoped_secret
+    from gateway.platforms._shared import get_scoped_secret
 
-        return str(get_scoped_secret(name, default) or "")
-    except Exception:
-        import os
-
-        return str(os.environ.get(name) or default)
+    return str(get_scoped_secret(name, default) or "")
 
 
 def _token_of(config) -> str:
@@ -387,7 +384,7 @@ class MindscapeAdapter(BasePlatformAdapter):
 
     async def _deliver(self, *, sender: str, lane: str, text: str,
                        message_id: Optional[str] = None) -> str:
-        from gateway.session import SessionSource
+        from gateway.platforms.base import SessionSource
 
         # chat_id carries the lane, so the gateway keys this inbound into its own
         # session instead of reusing the operator's conversation. That is the clone.

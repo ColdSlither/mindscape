@@ -199,6 +199,39 @@ The lesson is the one this codebase keeps teaching: a vocabulary assumed rather 
 defect waiting for a time. Read the terminal states off the peer, give "not found" a terminal state
 of its own, and never keep two copies of the list that decides what is finished.
 
+## Disclosure
+
+What this plugin does beyond its own data, in one place, so the blast radius is judgeable
+before installing rather than after.
+
+- **Inbound listener.** `adapter.py` runs a threaded HTTP server so peers can reach this
+  node. It binds `127.0.0.1` by default and widens only when `MINDSCAPE_TOKEN` is set; a
+  wide bind without a token is refused, not honoured. Default port `9901`.
+- **Outbound network calls.** Runs and chat are sent to the URLs you register per peer, with
+  `Authorization: Bearer <peer key>` on each request. They go through the same redirect-safe
+  opener `hermes peer` uses, so the key is not carried across a cross-origin redirect, and it
+  is never logged or returned.
+- **Subprocess.** The assign/status/stop path invokes the stock `hermes peer` CLI with
+  `subprocess.run` for the transport the CLI owns. No shell, no other executables.
+- **Stored credentials.** An Ed25519 identity keypair is written to this plugin's own data
+  directory at mode `0600`. Peer bearer keys are read through
+  `agent.secret_scope.get_secret` (profile-scoped) and are never written by this plugin.
+- **Files read outside plugin data.** A roster overlay at `~/.hermes/mindscape-nodes.yaml`,
+  or whatever `settings.nodes_file` points at, if you create one.
+- **No telemetry, no self-update.** Nothing is reported anywhere and nothing fetches its own
+  replacement code. Updates only ever arrive by installing a newer reviewed pin.
+
+### Known coupling
+
+`transport.py` imports `hermes_cli.urllib_security.open_credentialed_url`, which
+`hermes plugins validate` lists as a private core import (catalog rule 9). That is deliberate
+and currently unavoidable: the public alternatives (`tools.url_safety.is_safe_url`,
+`gateway.platforms.helpers.platform_http_client`) reject private and loopback addresses by
+design, which is exactly what a peer on a mesh or LAN must reach, and the public client is
+async while this transport is synchronous. The stock `hermes peer` CLI imports the same
+helper for the same reason. A documented seam is requested upstream; this note goes away when
+one exists.
+
 ## Configuration
 
 Optional, and only needed to give nodes meaning beyond their registered name.
