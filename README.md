@@ -92,12 +92,39 @@ interior where separate minds coexist and can see each other.
 ## Install
 
 ```bash
-# already placed at ~/.hermes/plugins/mindscape
+# from the repository (a custom source: installs the branch tip, and warns it is unvetted)
+hermes plugins install ColdSlither/mindscape
+
+# or pin the exact commit this README was written against
+hermes plugins install ColdSlither/mindscape --ref 9fc406fe5ba325ed379faceb418fe00f0c05b020
+
 hermes plugins enable mindscape
 ```
 
-Tools appear on the next session (`/reset`) or gateway restart. Tool changes do
-not apply mid-conversation, by design (prompt caching).
+Requires Hermes **>= 0.22**. Tools appear on the next session (`/reset`) or gateway
+restart. Tool changes do not apply mid-conversation, by design (prompt caching).
+
+### Reaching another node
+
+Installing this gives you a mindscape of one. A peer is an ordinary Hermes gateway with
+`api_server` enabled, registered locally:
+
+```bash
+hermes peer add <name> --url <url> --key <key>
+```
+
+**Both sides must be mutually reachable, and that is not something this plugin can fix.**
+If the other side sits on a private network — a mesh, a VPN, a LAN — you need shared
+reachability first (join that network, or tunnel to it), and the URL you register has to be
+one *you* can dial. Two nodes on unrelated private networks, each reachable only inside its
+own, simply cannot see each other; the roster will report the peer as unreachable rather
+than pretend otherwise.
+
+It is also worth being clear about what a peer grant means. An admitted peer can dispatch
+work that executes in **your** agent's own session, with your tools, memory and context.
+Admission is invite-only and enforced on the receiving side, but it is a real trust decision
+rather than a follow.
+
 
 ## Tools
 
