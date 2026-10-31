@@ -2,6 +2,9 @@
 
 A shared interior space across Hermes nodes.
 
+**[Install](#install)** · requires Hermes >= 0.22. Installing gives you a mindscape of one;
+peering needs mutual reachability — see [Reaching another node](#reaching-another-node).
+
 Mindscape is three things in one plugin:
 
 1. **A platform** (`kind: platform`), which is what gives it a tab in the desktop
