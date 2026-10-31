@@ -156,10 +156,19 @@ def _peer_key(name: str) -> str:
     from hermes_cli.config import get_env_value
 
     env_name = f"HERMES_PEER_{name.upper().replace('-', '_')}_KEY"
-    value = (get_secret(env_name, "") or "").strip()
-    if value:
-        return value
-    return str(get_env_value(env_name) or "").strip()
+    # Guarded for the same reason as adapter._scoped: a scoped read can raise during early
+    # startup or under multiplexing. A key lookup that raises would break every peer call, so it
+    # degrades to "no key", which the caller reports as an honest "has no key set".
+    try:
+        value = (get_secret(env_name, "") or "").strip()
+        if value:
+            return value
+    except Exception:
+        pass
+    try:
+        return str(get_env_value(env_name) or "").strip()
+    except Exception:
+        return ""
 
 
 def _node_view(name: str, entry: dict) -> dict:

@@ -103,13 +103,21 @@ def resolve_node(node: str) -> tuple[str, str]:
     env_name = f"HERMES_PEER_{name.upper().replace('-', '_')}_KEY"
     # Documented public routes only: the profile secret store first, then ~/.hermes/.env via
     # hermes_cli.config.get_env_value (itself scope-aware). Never a raw os.environ read, which
-    # under multiplexing could hand us another profile's key.
+    # under multiplexing could hand us another profile's key. Both are guarded because a scoped
+    # read can raise during early startup; an unreadable key then surfaces as the honest
+    # "has no key set" below rather than as a traceback from a config lookup.
     from agent.secret_scope import get_secret
     from hermes_cli.config import get_env_value
 
-    key = (get_secret(env_name, "") or "").strip()
+    try:
+        key = (get_secret(env_name, "") or "").strip()
+    except Exception:
+        key = ""
     if not key:
-        key = str(get_env_value(env_name) or "").strip()
+        try:
+            key = str(get_env_value(env_name) or "").strip()
+        except Exception:
+            key = ""
     if not key:
         raise TransportError(f"Node {name!r} has no key set ({env_name}).")
     return base, key

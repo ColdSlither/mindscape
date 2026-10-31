@@ -97,20 +97,33 @@ def check_requirements() -> bool:
 def _scoped(name: str, default: str = "") -> str:
     """Read an environment-scoped value through documented public routes.
 
-    ``get_scoped_secret`` (``gateway.platforms._shared``, documented for platform plugins)
-    resolves the active profile's secret store. Where it holds nothing, ``get_env_value`` from
-    ``hermes_cli.config`` is the documented route to ``~/.hermes/.env``, and is itself
-    scope-aware. Neither is a bare ``os.environ`` read: under multiplexing that would let a
+    Both reads are guarded, deliberately. The gateway can raise while resolving a scoped name
+    during early startup; it reports that as "an internal profile-scoping bug on the multiplexed
+    gateway" and suggests a restart. That raise surfaces inside adapter config validation, where an
+    exception means ``create_adapter`` never runs and the platform is absent for the whole session.
+    A config read must therefore never be able to fail that way: an unreadable name degrades to the
+    default instead of taking the platform down. (Removing these guards is what did exactly that.)
+
+    Order: the profile-scoped store (``gateway.platforms._shared``, documented for platform
+    plugins), then ``hermes_cli.config.get_env_value`` (the documented route to ``~/.hermes/.env``,
+    itself scope-aware). Neither is a bare ``os.environ`` read, which under multiplexing would let a
     secondary profile inherit the launch profile's token and port.
     """
-    from gateway.platforms._shared import get_scoped_secret
+    try:
+        from gateway.platforms._shared import get_scoped_secret
 
-    value = str(get_scoped_secret(name, "") or "")
-    if value:
-        return value
-    from hermes_cli.config import get_env_value
+        value = str(get_scoped_secret(name, default) or "")
+        if value:
+            return value
+    except Exception as exc:  # noqa: BLE001 - see docstring: must not kill adapter creation
+        logger.debug("Mindscape: scoped read of %s failed (%s); falling through", name, exc)
+    try:
+        from hermes_cli.config import get_env_value
 
-    return str(get_env_value(name) or default)
+        return str(get_env_value(name) or default)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Mindscape: env read of %s failed (%s); using default", name, exc)
+        return default
 
 
 def _token_of(config) -> str:
