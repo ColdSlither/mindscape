@@ -1,0 +1,61 @@
+name: mindscape
+kind: platform
+label: Mindscape
+version: 0.1.0
+description: >
+  A shared interior space across Hermes nodes.
+
+  Teammates gives one machine a named roster of subagents. Mindscape gives a
+  mesh of machines one roster of agents: every registered peer appears with its
+  role, its advertised capabilities and its live reachability, work is
+  dispatched to a node asynchronously and tracked in a durable ledger, and every
+  run can be recalled later from any node.
+
+  Transport is the stock `hermes peer` CLI (`run` / `status` / `stop`), which
+  speaks the peer's own Runs API (`POST /v1/runs` with an idempotency key,
+  `GET /v1/runs/<id>`, `POST /v1/runs/<id>/stop`). Nothing new is exposed on the
+  wire, no peer needs a patched core, and a peer that is offline is reported as
+  absent rather than hanging the caller.
+
+  Unlike a delegated subagent, a dispatched run executes in the target agent's
+  own session, with its own memory, skills and context. You are asking a peer,
+  not spawning a clone.
+author: Anansi (built for Intron Forge)
+provides_tools:
+  - mindscape_identity
+  - mindscape_peers
+  - mindscape_admit
+  - mindscape_revoke
+  - mindscape_say
+  - mindscape_presence
+  - mindscape_roster
+  - mindscape_assign
+  - mindscape_status
+  - mindscape_wait
+  - mindscape_recall
+  - mindscape_stop
+optional_env:
+  - name: MINDSCAPE_TOKEN
+    description: "Bearer token for inbound peer messages. With no token the listener binds to loopback only, so peers on other hosts cannot reach it."
+    prompt: "Mindscape inbound bearer token (or empty for loopback-only)"
+    password: true
+  - name: MINDSCAPE_PORT
+    description: "Inbound Mindscape port (default 9901)."
+    prompt: "Mindscape port (default 9901)"
+    password: false
+  - name: MINDSCAPE_HOST
+    description: "Inbound bind host. Defaults to 127.0.0.1 and is only widened when a token is set; a wide bind without a token is refused, not honoured."
+    prompt: "Mindscape bind host (default 127.0.0.1)"
+    password: false
+  - name: MINDSCAPE_ALLOWED_USERS
+    description: "Comma-separated allowlist of peer identities permitted to reach this agent."
+    prompt: "Allowed Mindscape peers (comma-separated, or empty)"
+    password: false
+  - name: MINDSCAPE_ALLOW_ALL_USERS
+    description: "Allow ANY authenticated peer to reach the agent. Development only."
+    prompt: "Allow all Mindscape peers? (true/false)"
+    password: false
+  - name: MINDSCAPE_HOME_LANE
+    description: "Lane used as the delivery target for cron and notifications sent over Mindscape."
+    prompt: "Mindscape home lane (or empty)"
+    password: false
