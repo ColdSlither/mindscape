@@ -144,16 +144,22 @@ def _overlay() -> dict:
 
 
 def _peer_key(name: str) -> str:
-    """The peer's bearer key, read through the documented scoped-secret route.
+    """The peer's bearer key, through documented public routes only.
 
-    ``agent.secret_scope.get_secret`` honours the active profile. A bare ``os.environ`` read
-    can pick up another profile's key under multiplexing, so there is no env fallback here:
-    the profile store is the single source, and a key it does not hold reads as absent.
+    ``agent.secret_scope.get_secret`` is the profile-scoped route. A key registered in
+    ``~/.hermes/.env`` rather than the secret store is read with ``hermes_cli.config.get_env_value``,
+    the documented route for that file, which is itself scope-aware. Neither is a bare
+    ``os.environ`` read, which under multiplexing could pick up another profile's key. This is the
+    same resolution order the stock ``hermes peer`` CLI uses.
     """
     from agent.secret_scope import get_secret
+    from hermes_cli.config import get_env_value
 
     env_name = f"HERMES_PEER_{name.upper().replace('-', '_')}_KEY"
-    return (get_secret(env_name, "") or "").strip()
+    value = (get_secret(env_name, "") or "").strip()
+    if value:
+        return value
+    return str(get_env_value(env_name) or "").strip()
 
 
 def _node_view(name: str, entry: dict) -> dict:

@@ -101,17 +101,15 @@ def resolve_node(node: str) -> tuple[str, str]:
         raise TransportError(f"Node {name!r} has no url registered.")
 
     env_name = f"HERMES_PEER_{name.upper().replace('-', '_')}_KEY"
-    key = ""
-    try:
-        from agent.secret_scope import get_secret
+    # Documented public routes only: the profile secret store first, then ~/.hermes/.env via
+    # hermes_cli.config.get_env_value (itself scope-aware). Never a raw os.environ read, which
+    # under multiplexing could hand us another profile's key.
+    from agent.secret_scope import get_secret
+    from hermes_cli.config import get_env_value
 
-        key = (get_secret(env_name, "") or "").strip()
-    except Exception:
-        pass
+    key = (get_secret(env_name, "") or "").strip()
     if not key:
-        import os
-
-        key = (os.environ.get(env_name) or "").strip()
+        key = str(get_env_value(env_name) or "").strip()
     if not key:
         raise TransportError(f"Node {name!r} has no key set ({env_name}).")
     return base, key

@@ -95,17 +95,22 @@ def check_requirements() -> bool:
 
 
 def _scoped(name: str, default: str = "") -> str:
-    """Read a *scoped* secret through the documented platform helper.
+    """Read an environment-scoped value through documented public routes.
 
-    Under multiplexing ``os.environ`` belongs to the launch profile, so a raw read would let a
-    secondary profile inherit the launch profile's token and port. ``get_scoped_secret``
-    (``gateway.platforms._shared``, documented for platform plugins) resolves the active
-    profile's store instead. There is deliberately no ``os.environ`` fallback: a name that is
-    not in the active profile is reported as missing rather than silently inherited.
+    ``get_scoped_secret`` (``gateway.platforms._shared``, documented for platform plugins)
+    resolves the active profile's secret store. Where it holds nothing, ``get_env_value`` from
+    ``hermes_cli.config`` is the documented route to ``~/.hermes/.env``, and is itself
+    scope-aware. Neither is a bare ``os.environ`` read: under multiplexing that would let a
+    secondary profile inherit the launch profile's token and port.
     """
     from gateway.platforms._shared import get_scoped_secret
 
-    return str(get_scoped_secret(name, default) or "")
+    value = str(get_scoped_secret(name, "") or "")
+    if value:
+        return value
+    from hermes_cli.config import get_env_value
+
+    return str(get_env_value(name) or default)
 
 
 def _token_of(config) -> str:
